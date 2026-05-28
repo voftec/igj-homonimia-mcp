@@ -244,14 +244,15 @@ async function enviarCaptchaHTTP(sessionId: string, captchaText: string): Promis
 const CATEGORIAS_IGJ: Array<{ codigo: string, nombre: string, slug: string }> = [
   { codigo: "010", nombre: "SOCIEDAD COLECTIVA", slug: "sociedad_colectiva" },
   { codigo: "020", nombre: "SOCIEDAD EN COMANDITA SIMPLE", slug: "comandita_simple" },
-  { codigo: "030", nombre: "SOCIEDAD DE CAPITAL E INDUSTRIA", slug: "capital_e_industria" },
-  { codigo: "040", nombre: "SOCIEDAD DE RESPONSABILIDAD LIMITADA", slug: "srl" },
+  { codigo: "030", nombre: "SOCIEDAD DE CAPITAL E INDUSTRIA", slug: "capital_industrial" },
+  { codigo: "040", nombre: "SOCIEDAD DE RESPONSABILIDAD LIMITADA", slug: "responsabilidad_limitada" },
   { codigo: "050", nombre: "SOCIEDAD ANONIMA", slug: "sa" },
+  { codigo: "055", nombre: "SOCIEDAD POR ACCIONES", slug: "accionista" },
   { codigo: "055", nombre: "SOCIEDAD DEL ESTADO", slug: "sociedad_del_estado" },
   { codigo: "060", nombre: "SOCIEDAD EN COMANDITA POR ACCIONES", slug: "comandita_por_acciones" },
   { codigo: "070", nombre: "SOCIEDAD DE HECHO", slug: "sociedad_de_hecho" },
   { codigo: "080", nombre: "SOCIEDAD CONSTITUIDA EN EL EXTRANJERO", slug: "extranjera" },
-  { codigo: "090", nombre: "SOCIEDAD BINACIONAL FUERA DE JUSRISDICCION", slug: "binacional" },
+  { codigo: "090", nombre: "SOCIEDAD BINACIONAL FUERA DE JURISDICCION", slug: "binacional" },
   { codigo: "100", nombre: "ASOCIACION CIVIL", slug: "asociacion_civil" },
   { codigo: "105", nombre: "ENTIDAD EXTRANJERA SIN FINES DE LUCRO", slug: "entidad_extranjera_sin_lucro" },
   { codigo: "110", nombre: "FUNDACION", slug: "fundacion" },
@@ -470,30 +471,38 @@ export function registerAllTools(server: McpServer) {
 }
 
 export function registerAllPrompts(server: McpServer) {
-  server.prompt(
-    "igj_analisis_integral_sociedad",
-    "Prompt para analizar integralmente una sociedad (nombre, tipo, estado).",
-    { denominacion: z.string(), tipo: z.string() },
-    ({ denominacion, tipo }) => ({
-      messages: [{ role: "user", content: { type: "text", text: `Actua como un abogado corporativo argentino experto en IGJ. Analiza la viabilidad, riesgos y recomendaciones para constituir una sociedad denominada "${denominacion}" bajo el tipo "${tipo}".` } }]
-    })
-  );
+  // Register prompts for each category-specific tool
+  CATEGORIAS_IGJ.forEach(cat => {
+    const toolName = `consultar_homonimia_${cat.slug}`;
+    server.prompt(
+      toolName,
+      `Verifica disponibilidad de denominación como ${cat.nombre} (${cat.codigo}).`,
+      { denominacion: z.string() },
+      ({ denominacion }) => ({
+        messages: [{ 
+          role: "user", 
+          content: { 
+            type: "text", 
+            text: `usa IGJ con la herramienta ${toolName} para verificá la disponibilidad de la denominación '${denominacion}' para una ${cat.nombre} (código ${cat.codigo}).` 
+          } 
+        }]
+      })
+    );
+  });
 
+  // Generic tool prompt
   server.prompt(
-    "igj_guia_constitucion",
-    "Guia paso a paso para constituir una sociedad en IGJ.",
-    { tipo: z.string() },
-    ({ tipo }) => ({
-      messages: [{ role: "user", content: { type: "text", text: `Dame una guia legal paso a paso con los requisitos formales de la IGJ (Inspeccion General de Justicia) para constituir una sociedad de tipo "${tipo}" en CABA (Argentina).` } }]
-    })
-  );
-
-  server.prompt(
-    "igj_instrucciones_hitl",
-    "Instrucciones sobre cómo usar el flujo HTTP+CAPTCHA imagen en 2 pasos",
-    {},
-    () => ({
-      messages: [{ role: "user", content: { type: "text", text: "Para consultar homonimia en IGJ: (1) Llama a consultar_homonimia_<categoria>(denominacion=...) - devuelve imagen CAPTCHA + session_id. (2) Lee el texto del CAPTCHA de la imagen. (3) Llama a enviar_captcha_homonimia(session_id, captcha=<texto>) para obtener los resultados. La sesión expira en 5 minutos." } }]
+    "consultar_homonimia",
+    "Verifica disponibilidad de denominación genérica con parámetro categoría.",
+    { denominacion: z.string(), categoria: z.string() },
+    ({ denominacion, categoria }) => ({
+      messages: [{ 
+        role: "user", 
+        content: { 
+          type: "text", 
+          text: `usa IGJ con la herramienta consultar_homonimia para verificá la disponibilidad de la denominación '${denominacion}' en la categoría '${categoria}'.` 
+        } 
+      }]
     })
   );
 }
