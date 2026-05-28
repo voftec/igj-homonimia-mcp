@@ -1,0 +1,38 @@
+# Source files
+src/
+*.ts
+tsconfig.json
+
+# Dependencies
+node_modules/
+
+# Development files
+.git/
+.gitignore
+.gitattributes
+
+# Test files
+*.test.ts
+*.test.js
+test/
+tests/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.log
+.env
+.env.local
+.env.*.local
